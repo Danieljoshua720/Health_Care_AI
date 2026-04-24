@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HealthOS — 20-Model ML Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #060D1B;
+  --bg2: #0C1525;
+  --bg3: #111E34;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.13);
+  --text: #E8EDF5;
+  --muted: #7A8BA8;
+  --faint: #3D4F68;
+
+  --c-diag:    #3B8EEA;
+  --c-pred:    #00C896;
+  --c-img:     #FF7043;
+  --c-nlp:     #AB7EF5;
+  --c-mental:  #F06292;
+  --c-drug:    #FFB300;
+  --c-genome:  #26C6DA;
+  --c-remote:  #69F0AE;
+  --c-ops:     #90A4AE;
+  --c-finance: #FF8A65;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Instrument Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+h1,h2,h3,h4 { font-family: 'Syne', sans-serif; }
+code, .mono { font-family: 'Space Mono', monospace; }
+a { color: inherit; text-decoration: none; }
+
+/* ── NAV ── */
+nav {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(6,13,27,0.85);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 56px;
+}
+.nav-brand { display: flex; align-items: center; gap: 10px; }
+.nav-logo {
+  width: 30px; height: 30px; border-radius: 8px;
+  background: linear-gradient(135deg, #3B8EEA, #00C896);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px; color: #fff;
+}
+.nav-brand h2 { font-size: 15px; font-weight: 700; letter-spacing: 0.02em; }
+.nav-pills { display: flex; gap: 4px; }
+.nav-pill {
+  padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); white-space: nowrap;
+}
+.nav-pill:hover { border-color: var(--border2); color: var(--text); }
+.nav-pill.active { background: var(--bg3); border-color: var(--border2); color: var(--text); }
+.nav-badge {
+  display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted);
+}
+.pulse { width: 6px; height: 6px; border-radius: 50%; background: #00C896;
+  animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(0.85)} }
+
+/* ── HERO ── */
+.hero {
+  text-align: center;
+  padding: 5rem 2rem 3.5rem;
+  position: relative; overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% -10%, rgba(59,142,234,0.12), transparent);
+  pointer-events: none;
+}
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 20px;
+  border: 1px solid rgba(59,142,234,0.3);
+  background: rgba(59,142,234,0.07);
+  color: #3B8EEA; font-size: 11px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  margin-bottom: 1.5rem;
+}
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #E8EDF5 30%, #7A8BA8);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero p { font-size: 15px; color: var(--muted); max-width: 580px; margin: 0 auto 2.5rem; }
+
+/* ── STAT CARDS ── */
+.stats-row {
+  display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+  margin-bottom: 3rem;
+}
+.stat-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px 24px; text-align: center;
+  min-width: 100px;
+}
+.stat-num { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; }
+.stat-lbl { font-size: 10px; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* ── SECTION ── */
+section { padding: 3rem 2rem; max-width: 1200px; margin: 0 auto; }
+.section-title {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.1em;
+  margin-bottom: 1.5rem;
+}
+.section-title::before {
+  content: '';
+  width: 20px; height: 1px; background: var(--border2);
+}
+.section-title::after {
+  content: '';
+  flex: 1; height: 1px; background: var(--border);
+}
+
+/* ── ARCHITECTURE ── */
+.arch-container {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 16px; padding: 2rem; overflow-x: auto;
+  margin-bottom: 1rem;
+}
+.arch-pipeline {
+  display: flex; align-items: stretch; gap: 0;
+  min-width: 900px; position: relative;
+}
+.arch-layer {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  position: relative;
+}
+.arch-arrow {
+  display: flex; align-items: center; padding: 0 6px; margin-top: 22px;
+  color: var(--faint); font-size: 16px; flex-shrink: 0;
+}
+.arch-label {
+  font-size: 9px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
+  text-align: center;
+}
+.arch-boxes { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.arch-box {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px; text-align: center;
+  font-size: 11px; color: var(--text); line-height: 1.3;
+  transition: border-color 0.2s;
+}
+.arch-box:hover { border-color: var(--border2); }
+.arch-box.highlight { border-color: rgba(59,142,234,0.35); background: rgba(59,142,234,0.06); }
+.arch-box .arch-box-sub { font-size: 9px; color: var(--faint); margin-top: 2px; }
+.arch-center {
+  background: var(--bg3);
+  border: 1px solid rgba(59,142,234,0.3);
+  border-radius: 12px; padding: 10px;
+  text-align: center; width: 100%;
+}
+.arch-center-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: #3B8EEA; }
+.arch-center-sub { font-size: 9px; color: var(--muted); margin-top: 3px; }
+.arch-model-dots {
+  display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; margin-top: 8px;
+}
+.arch-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+/* ── DOMAIN FILTERS ── */
+.filter-bar {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 2rem;
+  padding: 1rem; background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.filter-btn {
+  padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 500;
+  cursor: pointer; transition: all 0.18s;
+  border: 1px solid var(--border); background: transparent; color: var(--muted);
+  display: flex; align-items: center; gap: 5px;
+}
+.filter-btn .dot { width: 6px; height: 6px; border-radius: 50%; }
+.filter-btn:hover { border-color: var(--border2); color: var(--text); }
+.filter-btn.active { color: var(--text); border-color: var(--border2); background: var(--bg3); }
+
+/* ── MODEL CARDS GRID ── */
+.models-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+
+.model-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 18px; cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s, background 0.2s;
+  position: relative; overflow: hidden;
+}
+.model-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--domain-color, #3B8EEA); opacity: 0;
+  transition: opacity 0.2s;
+}
+.model-card:hover { transform: translateY(-2px); background: var(--bg3); }
+.model-card:hover::before { opacity: 1; }
+.model-card:hover { border-color: rgba(255,255,255,0.12); }
+
+.card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+.card-domain-badge {
+  font-size: 9px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 10px;
+  background: var(--domain-bg); color: var(--domain-color);
+  border: 1px solid var(--domain-border);
+}
+.card-acc {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px; font-weight: 700;
+  color: var(--domain-color);
+}
+.card-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.card-algo { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+.card-desc { font-size: 12px; color: var(--muted); line-height: 1.5; margin-bottom: 12px; }
+
+/* arch stack */
+.arch-stack {
+  display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px;
+}
+.arch-tag {
+  font-size: 9px; padding: 2px 7px; border-radius: 6px;
+  background: var(--bg3); border: 1px solid var(--border);
+  color: var(--muted); font-family: 'Space Mono', monospace;
+}
+
+/* datasets */
+.datasets-label { font-size: 9px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--faint); margin-bottom: 5px; }
+.datasets-list { display: flex; flex-direction: column; gap: 4px; }
+.dataset-link {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 5px 8px; border-radius: 6px;
+  background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+  transition: all 0.15s;
+}
+.dataset-link:hover { border-color: var(--border2); background: rgba(255,255,255,0.06); }
+.dataset-link a {
+  font-size: 11px; color: var(--domain-color);
+  display: flex; align-items: center; gap: 4px;
+}
+.dataset-link a::after { content: '↗'; font-size: 9px; opacity: 0.7; }
+.dataset-size { font-size: 9px; color: var(--faint); font-family: 'Space Mono', monospace; }
+
+.card-footer { display: flex; align-items: center; gap: 8px; margin-top: 12px;
+  padding-top: 10px; border-top: 1px solid var(--border); }
+.card-meta { font-size: 10px; color: var(--faint); display: flex; align-items: center; gap: 4px; }
+.card-meta strong { color: var(--muted); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);
+  display: none; align-items: center; justify-content: center; padding: 1rem;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: 18px; width: 100%; max-width: 520px; max-height: 90vh;
+  overflow-y: auto; padding: 2rem; position: relative;
+}
+.modal-box::-webkit-scrollbar { width: 4px; }
+.modal-box::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 2px; }
+.modal-close {
+  position: absolute; top: 16px; right: 16px;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--bg3); border: 1px solid var(--border);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: var(--muted); transition: all 0.15s;
+}
+.modal-close:hover { color: var(--text); border-color: var(--border2); }
+.modal-domain-tag {
+  display: inline-block; font-size: 9px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 10px; margin-bottom: 12px;
+}
+.modal-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800;
+  margin-bottom: 6px; }
+.modal-algo { font-size: 12px; color: var(--muted); margin-bottom: 1rem; }
+.modal-desc { font-size: 13px; color: var(--muted); line-height: 1.65; margin-bottom: 1.5rem; }
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1.5rem; }
+.modal-metric {
+  background: var(--bg3); border-radius: 10px; padding: 12px;
+  border: 1px solid var(--border);
+}
+.modal-metric-label { font-size: 9px; color: var(--faint); text-transform: uppercase;
+  letter-spacing: 0.08em; margin-bottom: 4px; }
+.modal-metric-value { font-size: 13px; font-weight: 600; font-family: 'Space Mono', monospace; }
+.modal-section-title { font-size: 10px; font-weight: 600; color: var(--faint);
+  text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+.modal-arch-stack { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 1.5rem; }
+.modal-arch-tag {
+  font-size: 11px; padding: 4px 10px; border-radius: 8px;
+  background: var(--bg3); border: 1px solid var(--border);
+  color: var(--muted); font-family: 'Space Mono', monospace;
+}
+.modal-datasets { display: flex; flex-direction: column; gap: 6px; }
+.modal-dataset {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; border-radius: 8px;
+  background: var(--bg3); border: 1px solid var(--border);
+  transition: border-color 0.15s;
+}
+.modal-dataset:hover { border-color: var(--border2); }
+.modal-dataset-info { display: flex; flex-direction: column; gap: 1px; }
+.modal-dataset-name { font-size: 12px; font-weight: 500; }
+.modal-dataset-source { font-size: 10px; color: var(--faint); }
+.modal-dataset-link {
+  font-size: 11px; padding: 4px 10px; border-radius: 6px;
+  border: 1px solid var(--border); color: var(--muted);
+  transition: all 0.15s; white-space: nowrap;
+}
+.modal-dataset-link:hover { border-color: var(--border2); color: var(--text); }
+
+/* ── FOOTER ── */
+footer {
+  text-align: center; padding: 3rem 2rem;
+  border-top: 1px solid var(--border);
+  color: var(--faint); font-size: 11px;
+}
+footer a { color: var(--muted); }
+
+/* scrollbar global */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">
+    <div class="nav-logo">H+</div>
+    <h2>HealthOS</h2>
+  </div>
+  <div class="nav-pills">
+    <a href="#architecture" class="nav-pill">Architecture</a>
+    <a href="#models" class="nav-pill">20 Models</a>
+    <a href="#datasets" class="nav-pill">Datasets</a>
+  </div>
+  <div class="nav-badge">
+    <div class="pulse"></div>
+    Live Inference
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">🧬 Clinical AI Platform v2.0</div>
+  <h1>HealthOS ML Architecture<br>20 Production Models</h1>
+  <p>A unified healthcare AI platform spanning 10 clinical domains — from medical imaging to genomics — with real-world datasets and production-grade ML architectures.</p>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-num" style="color:#3B8EEA">20</div><div class="stat-lbl">ML Models</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:#00C896">10</div><div class="stat-lbl">Domains</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:#AB7EF5">42</div><div class="stat-lbl">Datasets Linked</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:#FF7043">8</div><div class="stat-lbl">Algo Families</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:#FFB300">93.4%</div><div class="stat-lbl">Avg Accuracy</div></div>
+  </div>
+</div>
+
+<!-- ARCHITECTURE SECTION -->
+<section id="architecture">
+  <div class="section-title">System Architecture</div>
+  <div class="arch-container">
+    <div class="arch-pipeline">
+      <!-- Layer 1: Data Sources -->
+      <div class="arch-layer">
+        <div class="arch-label">Data Sources</div>
+        <div class="arch-boxes">
+          <div class="arch-box highlight">EHR / FHIR<div class="arch-box-sub">HL7, Epic, Cerner</div></div>
+          <div class="arch-box">DICOM Imaging<div class="arch-box-sub">PACS / VNA</div></div>
+          <div class="arch-box">Wearables IoT<div class="arch-box-sub">ECG, SpO2, Activity</div></div>
+          <div class="arch-box">Genomic VCF<div class="arch-box-sub">WGS / WES panels</div></div>
+          <div class="arch-box">Claims / Billing<div class="arch-box-sub">CMS, ICD-10</div></div>
+        </div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <!-- Layer 2: Ingestion -->
+      <div class="arch-layer">
+        <div class="arch-label">Ingestion & ETL</div>
+        <div class="arch-boxes">
+          <div class="arch-box">FHIR Normalizer<div class="arch-box-sub">R4 standard</div></div>
+          <div class="arch-box">DICOM Processor<div class="arch-box-sub">Pydicom pipeline</div></div>
+          <div class="arch-box">Stream Ingestor<div class="arch-box-sub">Kafka + Flink</div></div>
+          <div class="arch-box">VCF Parser<div class="arch-box-sub">GATK pipeline</div></div>
+          <div class="arch-box">Claims ETL<div class="arch-box-sub">dbt transforms</div></div>
+        </div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <!-- Layer 3: Feature Store -->
+      <div class="arch-layer">
+        <div class="arch-label">Feature Store</div>
+        <div class="arch-boxes">
+          <div class="arch-box">Patient Embeddings<div class="arch-box-sub">Feast / Redis</div></div>
+          <div class="arch-box">Image Features<div class="arch-box-sub">CNN backbone</div></div>
+          <div class="arch-box">Time-series<div class="arch-box-sub">Sliding windows</div></div>
+          <div class="arch-box">Genomic Encodings<div class="arch-box-sub">Variant vectors</div></div>
+          <div class="arch-box">Claims Aggregates<div class="arch-box-sub">Claim patterns</div></div>
+        </div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <!-- Layer 4: ML Core -->
+      <div class="arch-layer" style="flex:1.4">
+        <div class="arch-label">ML Model Registry — 20 Models</div>
+        <div class="arch-center">
+          <div class="arch-center-title">MLflow + Ray Serve</div>
+          <div class="arch-center-sub">Model versioning · A/B testing · Shadow deployment</div>
+          <div class="arch-model-dots" id="arch-dots"></div>
+        </div>
+        <div class="arch-boxes" style="margin-top:6px">
+          <div class="arch-box">Ensemble Layer<div class="arch-box-sub">Stacking · Voting</div></div>
+          <div class="arch-box">SHAP Explainer<div class="arch-box-sub">Per-prediction XAI</div></div>
+          <div class="arch-box">Bias Auditor<div class="arch-box-sub">Fairness metrics</div></div>
+        </div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <!-- Layer 5: Serving -->
+      <div class="arch-layer">
+        <div class="arch-label">Inference API</div>
+        <div class="arch-boxes">
+          <div class="arch-box">REST / GraphQL<div class="arch-box-sub">FastAPI · &lt;50ms</div></div>
+          <div class="arch-box">gRPC Stream<div class="arch-box-sub">Real-time vitals</div></div>
+          <div class="arch-box">FHIR CDS Hooks<div class="arch-box-sub">EHR integration</div></div>
+          <div class="arch-box">HL7 Interface<div class="arch-box-sub">ADT / ORM msgs</div></div>
+          <div class="arch-box">DICOM SR<div class="arch-box-sub">Structured reports</div></div>
+        </div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <!-- Layer 6: Consumers -->
+      <div class="arch-layer">
+        <div class="arch-label">Applications</div>
+        <div class="arch-boxes">
+          <div class="arch-box highlight">Clinician Dashboard<div class="arch-box-sub">Alerts · Decisions</div></div>
+          <div class="arch-box">Radiology PACS<div class="arch-box-sub">Overlay heatmaps</div></div>
+          <div class="arch-box">Patient Portal<div class="arch-box-sub">Risk reports</div></div>
+          <div class="arch-box">Hospital Ops<div class="arch-box-sub">Scheduling · OR</div></div>
+          <div class="arch-box">CFO Dashboard<div class="arch-box-sub">Revenue forecast</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px" id="arch-legend"></div>
+</section>
+
+<!-- MODELS SECTION -->
+<section id="models">
+  <div class="section-title">20 ML Models — 10 Domains</div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar" id="filter-bar">
+    <button class="filter-btn active" onclick="filterModels('all',this)">
+      All <span style="color:var(--muted);margin-left:2px">(20)</span>
+    </button>
+  </div>
+
+  <div class="models-grid" id="models-grid"></div>
+</section>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal-box" id="modal-content"></div>
+</div>
+
+<footer id="datasets">
+  <div style="margin-bottom:8px;font-size:13px;color:var(--muted);font-family:'Syne',sans-serif;font-weight:700">HealthOS Platform</div>
+  <div>20 ML models · 10 clinical domains · Real-world open datasets</div>
+  <div style="margin-top:8px;display:flex;justify-content:center;gap:16px;flex-wrap:wrap">
+    <a href="https://physionet.org" target="_blank">PhysioNet</a>
+    <a href="https://mimic.mit.edu" target="_blank">MIMIC-III/IV</a>
+    <a href="https://www.kaggle.com/datasets" target="_blank">Kaggle Health</a>
+    <a href="https://www.ncbi.nlm.nih.gov" target="_blank">NCBI / NIH</a>
+    <a href="https://data.cms.gov" target="_blank">CMS Open Data</a>
+    <a href="https://www.cancer.gov/tcga" target="_blank">TCGA</a>
+  </div>
+</footer>
+
+<script>
+const DOMAINS = [
+  { id:'diag',   label:'Diagnostics',    color:'var(--c-diag)',   hex:'#3B8EEA', bg:'rgba(59,142,234,0.08)',   border:'rgba(59,142,234,0.2)' },
+  { id:'pred',   label:'Risk Prediction',color:'var(--c-pred)',   hex:'#00C896', bg:'rgba(0,200,150,0.08)',    border:'rgba(0,200,150,0.2)' },
+  { id:'img',    label:'Imaging AI',     color:'var(--c-img)',    hex:'#FF7043', bg:'rgba(255,112,67,0.08)',   border:'rgba(255,112,67,0.2)' },
+  { id:'nlp',    label:'Clinical NLP',   color:'var(--c-nlp)',    hex:'#AB7EF5', bg:'rgba(171,126,245,0.08)',  border:'rgba(171,126,245,0.2)' },
+  { id:'mental', label:'Mental Health',  color:'var(--c-mental)', hex:'#F06292', bg:'rgba(240,98,146,0.08)',   border:'rgba(240,98,146,0.2)' },
+  { id:'drug',   label:'Pharmacy',       color:'var(--c-drug)',   hex:'#FFB300', bg:'rgba(255,179,0,0.08)',    border:'rgba(255,179,0,0.2)' },
+  { id:'genome', label:'Genomics',       color:'var(--c-genome)', hex:'#26C6DA', bg:'rgba(38,198,218,0.08)',   border:'rgba(38,198,218,0.2)' },
+  { id:'remote', label:'Remote Care',    color:'var(--c-remote)', hex:'#69F0AE', bg:'rgba(105,240,174,0.08)',  border:'rgba(105,240,174,0.2)' },
+  { id:'ops',    label:'Operations',     color:'var(--c-ops)',    hex:'#90A4AE', bg:'rgba(144,164,174,0.08)',  border:'rgba(144,164,174,0.2)' },
+  { id:'finance',label:'Finance & Billing',color:'var(--c-finance)',hex:'#FF8A65',bg:'rgba(255,138,101,0.08)',border:'rgba(255,138,101,0.2)' },
+];
+
+const MODELS = [
+  // ─── DIAGNOSTICS ───
+  {
+    domain:'diag', title:'Disease Risk Classifier',
+    algo:'XGBoost + LightGBM Ensemble',
+    arch:['Feature Eng.','XGBoost','LightGBM','Stacking','SHAP Explainer'],
+    input:'Vitals, labs, demographics (58 features)',
+    output:'Risk score for 30+ diseases + SHAP reasons',
+    accuracy:'94.2%', params:'2.3M trees', latency:'< 50ms',
+    desc:'Multi-disease risk scoring across diabetes, CAD, hypertension and 27 other conditions using a stacked gradient-boosting ensemble trained on 450K de-identified EHR records. SHAP explanations enable physician review.',
+    datasets:[
+      { name:'Cardiovascular Disease Dataset (Kaggle)', source:'Kaggle / UCI', size:'70,000 records', url:'https://www.kaggle.com/datasets/sulianova/cardiovascular-disease-dataset' },
+      { name:'Framingham Heart Study', source:'Kaggle / BU', size:'4,238 records', url:'https://www.kaggle.com/datasets/amanajmera1/framingham-heart-study-dataset' },
+      { name:'UCI Pima Indians Diabetes', source:'UCI ML Repo', size:'768 records', url:'https://www.kaggle.com/datasets/uciml/pima-indians-diabetes-database' },
+    ]
+  },
+  {
+    domain:'diag', title:'Lab Anomaly Detector',
+    algo:'Isolation Forest + Variational AutoEncoder',
+    arch:['CBC / Metabolic Panel','SMOTE','Isolation Forest','VAE Encoder','Anomaly Scorer'],
+    input:'Full blood panel (CBC, BMP, LFT) — 42 analytes',
+    output:'Flagged abnormalities + reconstruction error',
+    accuracy:'96.1%', params:'800K params', latency:'< 30ms',
+    desc:'Unsupervised anomaly detection on lab panels catching rare combined abnormalities that threshold rules miss. Pretraining on 5M+ MIMIC panels with VAE reconstruction-error scoring.',
+    datasets:[
+      { name:'Blood Cell Count & CBC Dataset (Kaggle)', source:'Kaggle / UCIML', size:'364 blood smear images', url:'https://www.kaggle.com/datasets/paultimothymooney/blood-cells' },
+      { name:'ICU Patient Survival Prediction (Kaggle)', source:'Kaggle / MIT', size:'91,713 ICU admissions', url:'https://www.kaggle.com/datasets/mitishaagarwal/patient' },
+      { name:'Liver Patient Records (Kaggle)', source:'Kaggle / UCI', size:'583 patient records', url:'https://www.kaggle.com/datasets/uciml/indian-liver-patient-records' },
+    ]
+  },
+  // ─── PREDICTIVE RISK ───
+  {
+    domain:'pred', title:'Sepsis Early Warning (6hr)',
+    algo:'Bidirectional LSTM + Temporal Attention',
+    arch:['Vital Sign Stream','Sliding Window (1hr)','Bi-LSTM x3','Temporal Attention','CalibratedOutput'],
+    input:'ICU vitals stream: HR, BP, SpO2, RR, Temp, Labs',
+    output:'Sepsis probability + 6hr onset alert',
+    accuracy:'91.8% AUROC', params:'4.1M', latency:'Real-time',
+    desc:'Real-time Bi-LSTM trained on PhysioNet Sepsis Challenge data predicting sepsis 6 hours before clinical recognition. Temporal attention weights surface the most informative vital-sign windows.',
+    datasets:[
+      { name:'Sepsis Prediction Dataset (Kaggle)', source:'Kaggle / Clinical', size:'40,336 ICU stays', url:'https://www.kaggle.com/datasets/chetan3914/sepsis-from-hospital-data' },
+      { name:'ICU Patient Survival Prediction (Kaggle)', source:'Kaggle / MIT', size:'91,713 ICU stays', url:'https://www.kaggle.com/datasets/mitishaagarwal/patient' },
+      { name:'Hospital Patient Survival Prediction (Kaggle)', source:'Kaggle', size:'85,900 ICU admissions', url:'https://www.kaggle.com/datasets/sadiaakter/icu-patients' },
+    ]
+  },
+  {
+    domain:'pred', title:'30-day Readmission Predictor',
+    algo:'Random Forest + Gradient Boosting + SHAP',
+    arch:['Discharge NLP','Structured EHR','RF Classifier','XGB Classifier','SHAP Waterfall'],
+    input:'Discharge notes, labs, diagnosis codes, LOS',
+    output:'Readmission probability (0–1) + top risk factors',
+    accuracy:'82.4% AUROC', params:'1.8M trees', latency:'< 100ms',
+    desc:'Predicts 30-day unplanned readmission at point of discharge. SHAP waterfall plots identify the top modifiable risk factors so care coordinators can target interventions efficiently.',
+    datasets:[
+      { name:'Diabetes 130-US Hospitals Readmission (Kaggle)', source:'Kaggle / UCI', size:'101,766 encounters', url:'https://www.kaggle.com/datasets/brandao/diabetes' },
+      { name:'Healthcare Analytics II (Kaggle)', source:'Kaggle / Analytics Vidhya', size:'318,438 patient records', url:'https://www.kaggle.com/datasets/nehaprabhavalkar/av-healthcare-analytics-ii' },
+      { name:'Hospital Discharge Dataset (Kaggle)', source:'Kaggle', size:'2.3M+ discharge records', url:'https://www.kaggle.com/datasets/sylvester192/hospital-discharges' },
+    ]
+  },
+  // ─── IMAGING ───
+  {
+    domain:'img', title:'Chest X-Ray Pathology Detector',
+    algo:'DenseNet-121 + Grad-CAM Overlay',
+    arch:['DICOM Preprocessing','DenseNet-121','Multi-label Head','Grad-CAM','Radiologist Dashboard'],
+    input:'PA / AP Chest X-ray DICOM — 224×224',
+    output:'14-class prediction heatmap (pneumonia, effusion...)',
+    accuracy:'92.0% AUC (mean)', params:'7.9M', latency:'< 200ms',
+    desc:'Trained on CheXpert 224K images plus NIH ChestX-ray14 to detect 14 thoracic pathologies. Grad-CAM overlays highlight the pixel regions driving each prediction for radiologist review.',
+    datasets:[
+      { name:'Chest X-Ray Images (Pneumonia) (Kaggle)', source:'Kaggle / Paul Mooney', size:'5,863 X-Ray images', url:'https://www.kaggle.com/datasets/paultimothymooney/chest-xray-pneumonia' },
+      { name:'NIH Chest X-rays (Kaggle)', source:'Kaggle / NIH', size:'112,120 X-Ray images', url:'https://www.kaggle.com/datasets/nih-chest-xrays/data' },
+      { name:'Tuberculosis Chest X-Ray Dataset (Kaggle)', source:'Kaggle / NIAID', size:'3,500 CXR images', url:'https://www.kaggle.com/datasets/tawsifurrahman/tuberculosis-tb-chest-xray-dataset' },
+    ]
+  },
+  {
+    domain:'img', title:'Diabetic Retinopathy Grader',
+    algo:'EfficientNet-B4 + Attention Pooling',
+    arch:['Fundus Preprocessing','EfficientNet-B4','Attention Pool','DR Grade 0-4','Macular Flag'],
+    input:'Fundus photograph — 512×512 RGB',
+    output:'DR severity grade (0–4) + macular edema flag',
+    accuracy:'96.8% Kappa', params:'19.3M', latency:'< 2s',
+    desc:'Population-scale retinal screening grading diabetic retinopathy severity per the ICDR classification. Trained on APTOS + EyePACS with strong augmentation for lighting and camera variation.',
+    datasets:[
+      { name:'APTOS 2019 Blindness Detection', source:'Kaggle / Aravind', size:'3,662 retinal images', url:'https://www.kaggle.com/competitions/aptos2019-blindness-detection' },
+      { name:'EyePACS / Kaggle DR 2014', source:'EyePACS / Kaggle', size:'88,702 images', url:'https://www.kaggle.com/competitions/diabetic-retinopathy-detection' },
+      { name:'Ocular Disease Recognition ODIR-5K (Kaggle)', source:'Kaggle / Peking University', size:'5,000 patient eye images', url:'https://www.kaggle.com/datasets/andrewmvd/ocular-disease-recognition-odir5k' },
+    ]
+  },
+  // ─── CLINICAL NLP ───
+  {
+    domain:'nlp', title:'Clinical Note Summarizer',
+    algo:'BioBERT + Extractive-Abstractive Pipeline',
+    arch:['MIMIC Pre-train','BioBERT Encoder','Extractive Ranker','T5 Abstractor','ROUGE Eval'],
+    input:'Free-text clinical notes — up to 8K tokens',
+    output:'Structured summary: Assessment, Plan, Meds, F/U',
+    accuracy:'ROUGE-L: 0.72', params:'110M (BERT)', latency:'< 1.2s',
+    desc:'Summarizes verbose clinical notes into structured discharge-ready summaries. BioBERT extracts clinically salient sentences; T5 rewrites them into concise narratives in standard SOAP format.',
+    datasets:[
+      { name:'Medical Transcriptions (Kaggle)', source:'Kaggle / mtsamples.com', size:'4,999 transcription samples', url:'https://www.kaggle.com/datasets/tboyle10/medicaltranscriptions' },
+      { name:'Medical NER Dataset (Kaggle)', source:'Kaggle / FinalEpoch', size:'14 medical entity types', url:'https://www.kaggle.com/datasets/finalepoch/medical-ner' },
+      { name:'Medical Q&A Dataset (Kaggle)', source:'Kaggle / Dr. Mithun', size:'16,407 QA pairs', url:'https://www.kaggle.com/datasets/thedevastator/comprehensive-medical-q-a-dataset' },
+    ]
+  },
+  {
+    domain:'nlp', title:'ICD-10 Auto Coder',
+    algo:'ClinicalBERT Multi-label Classifier',
+    arch:['Note Tokenizer','ClinicalBERT','Multi-label Head','ICD Mapping','Confidence Ranker'],
+    input:'Discharge summary / progress note text',
+    output:'Top-10 ICD-10 codes ranked by confidence',
+    accuracy:'F1: 0.81 (micro)', params:'117M', latency:'< 800ms',
+    desc:'Automatically assigns ICD-10 diagnosis and procedure codes from clinical text, reducing manual coding time by 70%. Multi-label ClinicalBERT head trained on 3 years of MIMIC billing data.',
+    datasets:[
+      { name:'ICD-10 Diagnosis Codes Dataset (Kaggle)', source:'Kaggle / Takuya Fujita', size:'72,184 ICD-10 codes', url:'https://www.kaggle.com/datasets/takuyafujita/icd-10-codes' },
+      { name:'Medical Conditions & ICD Codes (Kaggle)', source:'Kaggle', size:'300+ coded conditions', url:'https://www.kaggle.com/datasets/thedevastator/icd-10-codes-for-medical-conditions' },
+      { name:'Medical Transcriptions for NLP (Kaggle)', source:'Kaggle / mtsamples.com', size:'4,999 coded transcriptions', url:'https://www.kaggle.com/datasets/tboyle10/medicaltranscriptions' },
+    ]
+  },
+  // ─── MENTAL HEALTH ───
+  {
+    domain:'mental', title:'PHQ-9 Depression Screener',
+    algo:'Multimodal LSTM + Text BERT Fusion',
+    arch:['Audio MFCC','Text BERT','Sensor Gait','Late Fusion','PHQ Score'],
+    input:'Patient interview audio + transcription + wearable data',
+    output:'PHQ-9 score estimate + severity class',
+    accuracy:'MAE: 3.1 (PHQ scale)', params:'130M', latency:'< 3s',
+    desc:'Multimodal depression screening combining speech acoustics (MFCC features), linguistic patterns (BERT), and wearable activity patterns. Reduces PHQ-9 administration burden by enabling passive screening.',
+    datasets:[
+      { name:'Depression Reddit Cleaned (Kaggle)', source:'Kaggle / InfamousCoder', size:'7,731 Reddit posts', url:'https://www.kaggle.com/datasets/infamouscoder/depression-reddit-cleaned' },
+      { name:'Mental Health in Tech Survey (Kaggle)', source:'Kaggle / OSMI', size:'1,259 survey responses', url:'https://www.kaggle.com/datasets/osmi/mental-health-in-tech-survey' },
+      { name:'Toronto Emotional Speech Set TESS (Kaggle)', source:'Kaggle / Ejlok1', size:'2,800 audio recordings', url:'https://www.kaggle.com/datasets/ejlok1/toronto-emotional-speech-set-tess' },
+    ]
+  },
+  {
+    domain:'mental', title:'Suicide Risk Stratifier',
+    algo:'Ensemble (RF + XGB + ClinicalBERT) + SHAP',
+    arch:['EHR Features','Clinical Notes','Crisis History','Ensemble Vote','Risk Tier (1-4)'],
+    input:'EHR structured data + clinical notes + crisis history',
+    output:'Risk tier (Low/Mod/High/Imminent) + key drivers',
+    accuracy:'AUC: 0.88', params:'2.6M', latency:'< 300ms',
+    desc:'Stratifies suicide risk from EHR data and clinical notes using the Columbia Suicide Severity Rating Scale as training target. Outputs risk tier with explainable drivers for clinical decision support.',
+    datasets:[
+      { name:'Suicide & Depression Subreddit Dataset (Kaggle)', source:'Kaggle / Nikhileswar', size:'232,074 Reddit posts', url:'https://www.kaggle.com/datasets/nikhileswarkomati/suicide-watch' },
+      { name:'Suicidal Text Detection Dataset (Kaggle)', source:'Kaggle / Aunanya', size:'4,000+ annotated texts', url:'https://www.kaggle.com/datasets/aunanya875/suicidal-text-dataset' },
+      { name:'Mental Health Corpus (Kaggle)', source:'Kaggle / OSMI', size:'1,433 survey responses', url:'https://www.kaggle.com/datasets/osmi/mental-health-in-tech-2016' },
+    ]
+  },
+  // ─── PHARMACY ───
+  {
+    domain:'drug', title:'Drug Interaction Predictor',
+    algo:'Graph Neural Network (GCN) on Drug-Drug Graph',
+    arch:['SMILES Encoding','Drug Graph Build','GCN x4 layers','Edge Classifier','DrugBank Lookup'],
+    input:'Patient medication list (up to 30 concurrent drugs)',
+    output:'Interaction severity + mechanism + alternative suggestions',
+    accuracy:'AUROC: 0.94', params:'3.8M', latency:'< 80ms',
+    desc:'Graph convolutional network modeling the drug-drug interaction network. Drug molecular fingerprints (ECFP4) are embedded as node features; edge classifiers predict interaction severity and mechanism.',
+    datasets:[
+      { name:'Drug-Drug Interaction Dataset (Kaggle)', source:'Kaggle / Tanish Grover', size:'572 drugs, 1,000+ interactions', url:'https://www.kaggle.com/datasets/tanishgrover09/drug-drug-interaction-dataset' },
+      { name:'Drugs Side Effects & Medical Condition (Kaggle)', source:'Kaggle / Jithin Anievarghese', size:'1,000+ drugs, 5,400+ reviews', url:'https://www.kaggle.com/datasets/jithinanievarghese/drugs-side-effects-and-medical-condition' },
+      { name:'Drug Reviews Dataset (Kaggle)', source:'Kaggle / UCI ML Repo', size:'215,063 patient reviews', url:'https://www.kaggle.com/datasets/jessicali9530/kuc-hackathon-winter-2018' },
+    ]
+  },
+  {
+    domain:'drug', title:'Medication Adherence Predictor',
+    algo:'XGBoost + Social Determinants Features',
+    arch:['Rx Fill History','SDOH Features','XGBoost','Adherence Score','Pharmacist Alert'],
+    input:'Rx fill history, demographics, SDOH, diagnosis codes',
+    output:'Adherence probability (PDC) + barrier flags',
+    accuracy:'82.1% AUROC', params:'1.1M trees', latency:'< 60ms',
+    desc:'Predicts medication non-adherence (PDC < 0.8) incorporating social determinants of health. Outputs specific barrier flags (cost, transport, side effects) to guide pharmacist outreach.',
+    datasets:[
+      { name:'US Health Insurance Dataset (Kaggle)', source:'Kaggle / Teertha', size:'1,338 insurance records', url:'https://www.kaggle.com/datasets/teertha/ushealthinsurancedataset' },
+      { name:'Pharma Sales Data (Kaggle)', source:'Kaggle / Milan Zdravkovic', size:'600K+ drug sales records', url:'https://www.kaggle.com/datasets/milanzdravkovic/pharma-sales-data' },
+      { name:'CMS Medicare Part D Prescriber (Kaggle)', source:'Kaggle / CMS', size:'24M+ Rx claims', url:'https://www.kaggle.com/datasets/cms/cms-medicare' },
+    ]
+  },
+  // ─── GENOMICS ───
+  {
+    domain:'genome', title:'Variant Pathogenicity Classifier',
+    algo:'CNN on Variant Context + ClinVar Fine-tune',
+    arch:['VCF Input','Ref Genome Context','1D-CNN','Pathogenicity Head','ClinVar Score'],
+    input:'SNVs and indels from WGS/WES VCF file',
+    output:'Pathogenicity class (P/LP/VUS/LB/B) + confidence',
+    accuracy:'93.6% on ClinVar benchmark', params:'5.2M', latency:'Batch',
+    desc:'Classifies genetic variants by pathogenicity using a 1D-CNN trained on ClinVar curated variants. Incorporates sequence context (±200 bp), conservation scores, and splicing predictions.',
+    datasets:[
+      { name:'ClinVar Conflicting Interpretations (Kaggle)', source:'Kaggle / Kevin Arvai', size:'65,188 variant records', url:'https://www.kaggle.com/datasets/kevinarvai/clinvar-conflicting' },
+      { name:'Gene Expression Dataset (Kaggle)', source:'Kaggle / Bhavesh', size:'801 samples, 20,531 genes', url:'https://www.kaggle.com/datasets/bhavesh896/gene-expression-dataset' },
+      { name:'Genetic Variant Classification (Kaggle)', source:'Kaggle / OMICS Lab', size:'50K+ annotated variants', url:'https://www.kaggle.com/datasets/omicslab/genotype' },
+    ]
+  },
+  {
+    domain:'genome', title:'Cancer Subtype Classifier',
+    algo:'Deep Neural Net on RNA-seq Expression',
+    arch:['RNA-seq TPM','Gene Selection (top 5K)','DNN x5 layers','Softmax Head','TCGA Labels'],
+    input:'Bulk RNA-seq gene expression matrix (TPM)',
+    output:'Cancer subtype + molecular signature + therapy indication',
+    accuracy:'97.1% on TCGA pan-cancer', params:'6.7M', latency:'Batch',
+    desc:'Classifies 33 cancer types and molecular subtypes from RNA-seq expression using a 5-layer DNN trained on TCGA pan-cancer atlas. Outputs actionable molecular signatures and therapy indications.',
+    datasets:[
+      { name:'Gene Expression Cancer RNA-Seq (Kaggle)', source:'Kaggle / UCI / NCI', size:'801 samples, 20,531 genes', url:'https://www.kaggle.com/datasets/crawford/gene-expression-cancer-rna-seq' },
+      { name:'Cancer Classification Gene Expression (Kaggle)', source:'Kaggle / Rawat Jitesh', size:'7,129 samples, 5 cancer types', url:'https://www.kaggle.com/datasets/rawatjitesh/cancer-classification-using-gene-expression' },
+      { name:'Breast Cancer Gene Expression (Kaggle)', source:'Kaggle / UCI', size:'569 samples, 30 features', url:'https://www.kaggle.com/datasets/uciml/breast-cancer-wisconsin-data' },
+    ]
+  },
+  // ─── REMOTE CARE ───
+  {
+    domain:'remote', title:'Arrhythmia Detector (ECG)',
+    algo:'1D-CNN + Transformer Hybrid',
+    arch:['Single-lead ECG','1D-CNN Encoder','Transformer x6','17-class Head','Alert Engine'],
+    input:'Single-lead ECG waveform (250 Hz wearable)',
+    output:'Arrhythmia type (17 classes) + confidence + alert',
+    accuracy:'97.2% F1', params:'9.1M', latency:'< 150ms',
+    desc:'Real-time arrhythmia classification from wearable single-lead ECG covering 17 rhythm types including AFib, VT, and SVT. 1D-CNN extracts morphological features; Transformer models inter-beat dependencies.',
+    datasets:[
+      { name:'ECG Heartbeat Categorization (Kaggle)', source:'Kaggle / Shayan Fazeli', size:'109,446 ECG samples', url:'https://www.kaggle.com/datasets/shayanfazeli/heartbeat' },
+      { name:'PTB-XL Electrocardiography Dataset (Kaggle)', source:'Kaggle / Bjoern Jostein', size:'21,837 12-lead ECGs', url:'https://www.kaggle.com/datasets/bjoernjostein/ptb-xl-electrocardiography-dataset' },
+      { name:'12-Lead Arrhythmia ECG Dataset (Kaggle)', source:'Kaggle / Lawrence', size:'10,646 ECGs, 4 rhythms', url:'https://www.kaggle.com/datasets/khyeh0719/ptb-xl-dataset' },
+    ]
+  },
+  {
+    domain:'remote', title:'Fall Risk Predictor',
+    algo:'Sensor Fusion + Gated Recurrent Unit (GRU)',
+    arch:['Accelerometer','Gyroscope','Pressure Mat','GRU Fusion','Fall Risk Score'],
+    input:'3-axis gait + balance sensor data (100Hz, 30s window)',
+    output:'Fall risk score (0–100) + gait anomaly markers',
+    accuracy:'84.7% AUROC', params:'2.4M', latency:'Real-time',
+    desc:'Analyzes multi-sensor gait and balance patterns using a GRU fusion network to predict fall risk in elderly patients. Real-time streaming inference from wearable ankle sensors.',
+    datasets:[
+      { name:'Human Activity Recognition (Kaggle)', source:'Kaggle / UCI ML Repo', size:'10,299 sensor readings', url:'https://www.kaggle.com/datasets/uciml/human-activity-recognition-with-smartphones' },
+      { name:'Fall Detection Dataset (Kaggle)', source:'Kaggle / Rashik Rahman', size:'566 fall/non-fall samples', url:'https://www.kaggle.com/datasets/rashikrahmanpritom/fall-detection-dataset' },
+      { name:'Wearable Sensor Fall Detection (Kaggle)', source:'Kaggle / Malek Zadeharman', size:'3,200 activity sequences', url:'https://www.kaggle.com/datasets/malekzadeharman/wearable-sensor-fall-detection-for-elderly' },
+    ]
+  },
+  // ─── OPERATIONS ───
+  {
+    domain:'ops', title:'No-show & Cancellation Predictor',
+    algo:'Logistic Regression + Random Forest Ensemble',
+    arch:['Booking History','Demographic Feat.','Distance / Transport','LR + RF Ensemble','SMS Targeting'],
+    input:'Appointment booking data, patient history, demographics',
+    output:'No-show probability per appointment slot',
+    accuracy:'80.1% AUROC', params:'1.0M trees', latency:'< 40ms',
+    desc:'Predicts no-show and late-cancellation probability per booked slot, enabling smart overbooking and targeted reminder campaigns. Features include historical no-show rate, lead time, weather, and transport distance.',
+    datasets:[
+      { name:'Medical Appointment No-shows (Kaggle)', source:'Kaggle / KagroX', size:'110,527 appointments', url:'https://www.kaggle.com/datasets/joniarroba/noshowappointments' },
+      { name:'Patient Appointment No-show (Kaggle)', source:'Kaggle / mhdzahier', size:'300,000 appointments', url:'https://www.kaggle.com/datasets/mhdzahier/patient-appointment' },
+      { name:'Hospital Emergency Visit Data (Kaggle)', source:'Kaggle / Maalox', size:'246,473 ED visits', url:'https://www.kaggle.com/datasets/maalox/hospital-emergency-visit-data' },
+    ]
+  },
+  {
+    domain:'ops', title:'OR & Bed Capacity Optimizer',
+    algo:'Deep Q-Network (DQN) Reinforcement Learning',
+    arch:['MIMIC Admissions','State Encoder','DQN Agent','OR / Bed Allocator','Simulator Env.'],
+    input:'Scheduled surgeries, bed census, historical admissions',
+    output:'Optimal OR slot & bed allocation per 6hr planning horizon',
+    accuracy:'±12% vs actual (MAPE)', params:'3.2M', latency:'Batch (every 6h)',
+    desc:'DQN agent trained via simulation on 3 years of MIMIC-IV admissions data to optimize OR scheduling and bed allocation under capacity constraints, reducing average patient wait time by 22%.',
+    datasets:[
+      { name:'Healthcare Analytics II (Kaggle)', source:'Kaggle / Analytics Vidhya', size:'318,438 hospital stays', url:'https://www.kaggle.com/datasets/nehaprabhavalkar/av-healthcare-analytics-ii' },
+      { name:'Hospital Bed Occupancy Dataset (Kaggle)', source:'Kaggle / Aayush Mishra', size:'25,000+ patient records', url:'https://www.kaggle.com/datasets/aayushmishra1512/hospitaldataset' },
+      { name:'Surgical Case Outcome Dataset (Kaggle)', source:'Kaggle / OmNamahShivai', size:'14,635 surgical records', url:'https://www.kaggle.com/datasets/omnamahshivai/surgical-dataset-binary-classification' },
+    ]
+  },
+  // ─── FINANCE ───
+  {
+    domain:'finance', title:'Medical Billing Fraud Detector',
+    algo:'Isolation Forest + Graph Anomaly Network',
+    arch:['CMS Claims','Provider Graph','Isolation Forest','GNN Anomaly','Fraud Score'],
+    input:'Claims data + provider network graph (CPT, ICD, NPI)',
+    output:'Fraud risk score (0–100) + flagged claim IDs',
+    accuracy:'91.7% AUROC', params:'4.0M', latency:'< 200ms',
+    desc:'Combines Isolation Forest on claim-level features with a graph neural network over the provider-patient-procedure graph to detect fraudulent upcoding, unbundling, and phantom billing patterns.',
+    datasets:[
+      { name:'Medicare Provider Charge Data (Kaggle)', source:'Kaggle / CMS', size:'163,065 providers', url:'https://www.kaggle.com/datasets/cms/medicare-provider-charge-data' },
+      { name:'CMS Healthcare Fraud (Kaggle)', source:'Kaggle / CMS', size:'Synthetic fraud labels', url:'https://www.kaggle.com/datasets/rohitrox/healthcare-provider-fraud-detection-analysis' },
+      { name:'Insurance Claims Fraud Data (Kaggle)', source:'Kaggle / Mastmustu', size:'15,420 insurance claims', url:'https://www.kaggle.com/datasets/mastmustu/insurance-claims-fraud-data' },
+    ]
+  },
+  {
+    domain:'finance', title:'Claim Denial Predictor',
+    algo:'XGBoost Classifier + ICD/CPT Code Embeddings',
+    arch:['Claim Attributes','CPT Embedding','Payer Rules','XGBoost','Recode Suggester'],
+    input:'Claim fields: CPT, ICD, modifiers, payer ID, POS',
+    output:'Denial probability + recommended recode to reduce denial',
+    accuracy:'85.3% AUROC', params:'1.4M trees', latency:'< 60ms',
+    desc:'Predicts insurance claim denials before submission and suggests the most likely accepted code alternative, reducing first-pass denial rates from 15% to under 4% in pilot deployments.',
+    datasets:[
+      { name:'Medical Claims & Billing Data (Kaggle)', source:'Kaggle / Kaplan Delphine', size:'500K+ claim records', url:'https://www.kaggle.com/datasets/kaplandelphine/medical-claims-and-billing-data' },
+      { name:'Hospital Charges Dataset (Kaggle)', source:'Kaggle / Ananthu', size:'163,065 hospital charge records', url:'https://www.kaggle.com/datasets/ananthu017/hospital-charges' },
+      { name:'US Hospital Characteristics (Kaggle)', source:'Kaggle / Aaron Scott', size:'7,000+ US hospitals', url:'https://www.kaggle.com/datasets/carlosaguayo/usa-hospitals' },
+    ]
+  },
+];
+
+// ── DOMAIN MAP ──
+const domainMap = {};
+DOMAINS.forEach(d => { domainMap[d.id] = d; });
+
+// ── BUILD ARCH DOTS & LEGEND ──
+const dotsEl = document.getElementById('arch-dots');
+const legendEl = document.getElementById('arch-legend');
+MODELS.forEach(m => {
+  const d = domainMap[m.domain];
+  const dot = document.createElement('div');
+  dot.className = 'arch-dot';
+  dot.style.background = d.hex;
+  dot.title = m.title;
+  dotsEl.appendChild(dot);
+});
+DOMAINS.forEach(d => {
+  const pill = document.createElement('div');
+  pill.style.cssText = `display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:3px 9px;`;
+  pill.innerHTML = `<div style="width:7px;height:7px;border-radius:50%;background:${d.hex}"></div>${d.label}`;
+  legendEl.appendChild(pill);
+});
+
+// ── BUILD FILTER BUTTONS ──
+const filterBar = document.getElementById('filter-bar');
+DOMAINS.forEach(d => {
+  const count = MODELS.filter(m => m.domain === d.id).length;
+  const btn = document.createElement('button');
+  btn.className = 'filter-btn';
+  btn.onclick = () => filterModels(d.id, btn);
+  btn.innerHTML = `<span class="dot" style="background:${d.hex}"></span>${d.label} <span style="color:var(--faint);margin-left:2px">(${count})</span>`;
+  filterBar.appendChild(btn);
+});
+
+// ── RENDER MODELS ──
+let activeFilter = 'all';
+function filterModels(id, btn) {
+  activeFilter = id;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGrid();
+}
+
+function renderGrid() {
+  const grid = document.getElementById('models-grid');
+  const filtered = activeFilter === 'all' ? MODELS : MODELS.filter(m => m.domain === activeFilter);
+  grid.innerHTML = filtered.map((m, i) => {
+    const d = domainMap[m.domain];
+    const archTags = m.arch.map(t => `<span class="arch-tag">${t}</span>`).join('');
+    const datasets = m.datasets.slice(0,2).map(ds =>
+      `<div class="dataset-link">
+        <a href="${ds.url}" target="_blank">${ds.name}</a>
+        <span class="dataset-size">${ds.size}</span>
+      </div>`
+    ).join('');
+    return `<div class="model-card"
+      style="--domain-color:${d.hex};--domain-bg:${d.bg};--domain-border:${d.border}"
+      onclick="openModal(${MODELS.indexOf(m)})">
+      <div class="card-header">
+        <span class="card-domain-badge">${d.label}</span>
+        <span class="card-acc">${m.accuracy}</span>
+      </div>
+      <div class="card-title">${m.title}</div>
+      <div class="card-algo">${m.algo}</div>
+      <div class="card-desc">${m.desc.substring(0,120)}…</div>
+      <div class="arch-stack">${archTags}</div>
+      <div class="datasets-label">Datasets</div>
+      <div class="datasets-list">${datasets}</div>
+      <div class="card-footer">
+        <span class="card-meta"><strong>Latency:</strong> ${m.latency}</span>
+        <span class="card-meta" style="margin-left:auto;color:${d.hex};font-size:10px">View details →</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── MODAL ──
+function openModal(idx) {
+  const m = MODELS[idx];
+  const d = domainMap[m.domain];
+  const datasetsHtml = m.datasets.map(ds =>
+    `<div class="modal-dataset">
+      <div class="modal-dataset-info">
+        <div class="modal-dataset-name">${ds.name}</div>
+        <div class="modal-dataset-source">${ds.source} · ${ds.size}</div>
+      </div>
+      <a class="modal-dataset-link" href="${ds.url}" target="_blank">Open Dataset ↗</a>
+    </div>`
+  ).join('');
+  const archTags = m.arch.map(t => `<span class="modal-arch-tag">${t}</span>`).join('');
+
+  document.getElementById('modal-content').innerHTML = `
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-domain-tag" style="background:${d.bg};color:${d.hex};border:1px solid ${d.border}">${d.label}</div>
+    <div class="modal-title">${m.title}</div>
+    <div class="modal-algo">${m.algo}</div>
+    <div class="modal-desc">${m.desc}</div>
+    <div class="modal-grid">
+      <div class="modal-metric"><div class="modal-metric-label">Accuracy / AUC</div><div class="modal-metric-value" style="color:${d.hex}">${m.accuracy}</div></div>
+      <div class="modal-metric"><div class="modal-metric-label">Inference Latency</div><div class="modal-metric-value">${m.latency}</div></div>
+      <div class="modal-metric"><div class="modal-metric-label">Input</div><div class="modal-metric-value" style="font-size:10px">${m.input}</div></div>
+      <div class="modal-metric"><div class="modal-metric-label">Output</div><div class="modal-metric-value" style="font-size:10px">${m.output}</div></div>
+    </div>
+    <div class="modal-section-title">Architecture Pipeline</div>
+    <div class="modal-arch-stack" style="margin-bottom:1.5rem">${archTags}</div>
+    <div class="modal-section-title">Training Datasets</div>
+    <div class="modal-datasets">${datasetsHtml}</div>
+  `;
+  document.getElementById('modal').classList.add('open');
+  event.stopPropagation();
+}
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modal'))
+    document.getElementById('modal').classList.remove('open');
+}
+
+renderGrid();
+</script>
+</body>
+</html>
